@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Open Badges Platform (GDG on Campus)
 
-## Getting Started
+Sistema integral de credenciales digitales verificables basado en el estándar internacional **Open Badges v2.0** con verificación alojada (**Hosted Badge**).
 
-First, run the development server:
+## 🚀 Características
+
+1. **Backend Open Badges v2.0 estándar**:
+   - `GET /api/badges/issuer` - Devuelve el perfil del emisor oficial (organización).
+   - `GET /api/badges/class/:id` - Devuelve la especificación del evento/insignia (BadgeClass).
+   - `GET /api/badges/assertion/:id` - Devuelve la asignación criptográfica (hash SHA-256 + salt del correo del destinatario y verificación `HostedBadge`).
+2. **Interfaz Web de Certificados (`/cert/:id`)**:
+   - Visualización responsiva y estilizada:
+     - **Estilo Original GDG**: Minimalista con cabecera de 4 colores Google, rol y firmas.
+     - **Estilo Hackathon / Achievement**: Badge de competición, medallas/puesto y asignación de grupo.
+   - Botón directo **"Añadir a LinkedIn"** con los parámetros oficiales de certificación (`CERTIFICATION_NAME`, `organizationName`, `certUrl`, `certId`).
+   - Modal **"Cartera Open Badges"** con enlace a mochilas digitales (Badgr / Canvas Badges), validador oficial **BadgeCheck.io** y descarga del archivo JSON de la Assertion.
+   - Código QR de verificación para escaneo con móvil.
+   - Formato optimizado para impresión o guardado en PDF (`@media print`).
+3. **Panel del Asistente (`/my-badges`)**:
+   - Permite consultar todos los certificados emitidos a un correo y gestionarlos en un único lugar.
+4. **Panel de Emisión (`/admin`)**:
+   - Creación de nuevas insignias (`BadgeClass`).
+   - Emisión instantánea de certificados a participantes individuales o por lotes.
+
+## 🛠️ Cómo ejecutar el proyecto
 
 ```bash
+cd C:\Users\migue\Projects\openbadges-platform
+
+# Instalar dependencias
+npm install
+
+# Modo desarrollo
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Compilar para producción
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🌐 Variables de entorno (Opcional en despliegue)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+En `.env.local` o en la plataforma de despliegue (Vercel, VPS, etc.):
+```env
+NEXT_PUBLIC_SITE_URL=https://tu-dominio.com
+```
+Si no se define, el backend autodetecta la cabecera `Host` de las peticiones para emitir las URLs canónicas correctas.

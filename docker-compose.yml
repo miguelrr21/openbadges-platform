@@ -1,0 +1,15 @@
+services:
+  openbadges:
+    build: .
+    container_name: openbadges-platform
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_SITE_URL=https://gdguam.es
+    volumes:
+      - openbadges-data:/app/data
+
+volumes:
+  openbadges-data:

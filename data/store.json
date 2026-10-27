@@ -17,6 +17,48 @@
       }
     ]
   },
-  "badges": {},
-  "assertions": {}
+  "badges": {
+    "bbdd3e0e4a935bae1b9eccfd": {
+      "id": "bbdd3e0e4a935bae1b9eccfd",
+      "name": "Taller de Ciberseguridad & Open Badges GDGoC UHU",
+      "description": "Formación práctica en estándares criptográficos e identidad digital universitaria.",
+      "criteriaNarrative": "Certificado concedido por Taller de Ciberseguridad & Open Badges GDGoC UHU.",
+      "image": "/logo/logo.svg",
+      "theme": "gdg",
+      "eventDates": "Noviembre 2026",
+      "tags": [
+        "GDGoC UHU",
+        "Certificado"
+      ],
+      "createdAt": "2026-10-27T17:02:16.055Z"
+    }
+  },
+  "assertions": {
+    "6e2c1f2fcc84dbc9e8016860": {
+      "id": "6e2c1f2fcc84dbc9e8016860",
+      "badgeClassId": "bbdd3e0e4a935bae1b9eccfd",
+      "recipient": {
+        "type": "email",
+        "hashed": true,
+        "identity": "sha256$9e52506d7609248bb36685d68d46326dcf349ed088e57b47be8722bc03e30350",
+        "salt": "salt_6e2c1f2f",
+        "name": "Carmen Gómez Navarro",
+        "email": "carmen.gomez@alu.uhu.es"
+      },
+      "issuedOn": "2026-10-27T17:02:16.068Z",
+      "metadata": {
+        "role": "Asistente Destacada",
+        "signers": [
+          {
+            "name": "Organización GDGoC UHU",
+            "role": "Chapter Lead"
+          },
+          {
+            "name": "Coordinación Académica",
+            "role": "Faculty Advisor"
+          }
+        ]
+      }
+    }
+  }
 }

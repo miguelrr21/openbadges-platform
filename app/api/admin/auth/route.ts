@@ -14,8 +14,16 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
     const expectedPassword = getAdminPassword();
+
+    if (!expectedPassword) {
+      return NextResponse.json(
+        { error: "Error del servidor: La variable ADMIN_PASSWORD no está configurada en el hosting." },
+        { status: 500 }
+      );
+    }
+
+    const { password } = await request.json();
 
     if (!password || password !== expectedPassword) {
       return NextResponse.json({ error: "Clave de administrador incorrecta" }, { status: 401 });

@@ -35,10 +35,11 @@ export async function POST(request: NextRequest) {
   const token = request.cookies.get("admin_session")?.value;
   const authHeader = request.headers.get("authorization");
   const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+  const adminSecret = getAdminPassword();
 
   const isAuth =
     verifyAdminSessionToken(token) ||
-    (bearerToken && bearerToken === getAdminPassword());
+    (Boolean(adminSecret) && bearerToken === adminSecret);
 
   if (!isAuth) {
     return NextResponse.json(

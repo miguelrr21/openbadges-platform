@@ -1,13 +1,14 @@
 import crypto from "crypto";
 
-const DEFAULT_ADMIN_PASSWORD = "uhu_admin_2026";
-
-export function getAdminPassword(): string {
-  return process.env.ADMIN_PASSWORD || DEFAULT_ADMIN_PASSWORD;
+export function getAdminPassword(): string | null {
+  return process.env.ADMIN_PASSWORD || null;
 }
 
 export function createAdminSessionToken(): string {
   const secret = getAdminPassword();
+  if (!secret) {
+    throw new Error("ADMIN_PASSWORD no configurada en las variables de entorno");
+  }
   const timestamp = Date.now().toString();
   const hmac = crypto.createHmac("sha256", secret).update(`admin-session-${timestamp}`).digest("hex");
   return `${timestamp}.${hmac}`;
@@ -16,6 +17,9 @@ export function createAdminSessionToken(): string {
 export function verifyAdminSessionToken(token?: string | null): boolean {
   if (!token) return false;
   try {
+    const secret = getAdminPassword();
+    if (!secret) return false;
+
     const [timestampStr, hmac] = token.split(".");
     if (!timestampStr || !hmac) return false;
 
@@ -25,7 +29,6 @@ export function verifyAdminSessionToken(token?: string | null): boolean {
       return false;
     }
 
-    const secret = getAdminPassword();
     const expectedHmac = crypto.createHmac("sha256", secret).update(`admin-session-${timestampStr}`).digest("hex");
 
     return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac));

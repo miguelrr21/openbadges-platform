@@ -15,8 +15,6 @@ import {
 import { LinkedInIcon } from "@/components/icons/LinkedInIcon";
 import {
   Award,
-  CheckCircle,
-  Copy,
   Download,
   ExternalLink,
   Printer,
@@ -24,9 +22,10 @@ import {
   ShieldCheck,
   Check,
   Code2,
-  Calendar,
   Share2,
-  Trophy
+  Trophy,
+  Copy,
+  X
 } from "lucide-react";
 
 interface CertificateViewerProps {
@@ -43,6 +42,8 @@ export default function CertificateViewer({
   host
 }: CertificateViewerProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedAssertionUrl, setCopiedAssertionUrl] = useState(false);
+  const [showOpenBadgesModal, setShowOpenBadgesModal] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
@@ -55,7 +56,6 @@ export default function CertificateViewer({
   const certUrl = `${baseUrl}/cert/${assertion.id}`;
   const assertionApiUrl = `${baseUrl}/api/badges/assertion/${assertion.id}`;
   const badgeApiUrl = `${baseUrl}/api/badges/class/${badge.id}`;
-  const issuerApiUrl = `${baseUrl}/api/badges/issuer`;
 
   const linkedInUrl = generateLinkedInCertUrl(
     badge.name,
@@ -79,6 +79,24 @@ export default function CertificateViewer({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleCopyAssertionUrl = () => {
+    navigator.clipboard.writeText(assertionApiUrl);
+    setCopiedAssertionUrl(true);
+    setTimeout(() => setCopiedAssertionUrl(false), 2000);
+  };
+
+  const handleDownloadJson = () => {
+    const jsonBlob = new Blob([JSON.stringify(rawAssertionJson, null, 2)], {
+      type: "application/json"
+    });
+    const downloadUrl = URL.createObjectURL(jsonBlob);
+    const a = document.createElement("a");
+    a.href = downloadUrl;
+    a.download = `openbadge-${assertion.id}.json`;
+    a.click();
+    URL.revokeObjectURL(downloadUrl);
+  };
+
   const handlePrint = () => {
     window.print();
   };
@@ -97,7 +115,7 @@ export default function CertificateViewer({
     id: assertionApiUrl,
     recipient: {
       type: "email",
-      hashed: true,
+      hashed: assertion.recipient.hashed,
       identity: assertion.recipient.identity,
       salt: assertion.recipient.salt
     },
@@ -264,13 +282,22 @@ export default function CertificateViewer({
             <span>Añadir a LinkedIn</span>
           </a>
 
+          {/* Add to Open Badges Wallet */}
+          <button
+            onClick={() => setShowOpenBadgesModal(true)}
+            className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors shadow-sm"
+          >
+            <Award className="w-4 h-4" />
+            <span>Añadir a Open Badges</span>
+          </button>
+
           {/* Print / PDF */}
           <button
             onClick={handlePrint}
             className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors shadow-xs"
           >
             <Printer className="w-4 h-4 text-slate-500" />
-            <span>Imprimir / Guardar PDF</span>
+            <span>Imprimir / PDF</span>
           </button>
 
           {/* Copy Link */}
@@ -306,9 +333,119 @@ export default function CertificateViewer({
             className="inline-flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 px-4 py-2.5 rounded-lg text-xs font-semibold transition-colors shadow-xs"
           >
             <Code2 className="w-4 h-4 text-slate-500" />
-            <span>Ver JSON Open Badges</span>
+            <span>Ver JSON</span>
           </button>
         </div>
+
+        {/* MODAL: Añadir a Open Badges (Carteras / Backpacks) */}
+        {showOpenBadgesModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs">
+            <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl border border-slate-200">
+              <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-indigo-600" />
+                  <h3 className="font-bold text-sm text-slate-900">
+                    Añadir a Cartera Open Badges
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowOpenBadgesModal(false)}
+                  className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Step 1: Copy assertion URL */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  1. URL Oficial de la Aserción (Hosted Assertion):
+                </label>
+                <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg p-2">
+                  <code className="text-[11px] text-slate-600 font-mono flex-1 truncate select-all">
+                    {assertionApiUrl}
+                  </code>
+                  <button
+                    onClick={handleCopyAssertionUrl}
+                    className="inline-flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded text-xs font-medium transition-colors shrink-0"
+                  >
+                    {copiedAssertionUrl ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{copiedAssertionUrl ? "Copiada" : "Copiar"}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  Copia esta URL y pégala en la opción &quot;Importar por URL&quot; de tu cartera o mochila digital.
+                </p>
+              </div>
+
+              {/* Step 2: Major backpacks links */}
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-slate-700 mb-2">
+                  2. Abre tu cartera de Open Badges habitual:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <a
+                    href="https://openbadgepassport.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 text-xs font-medium transition-colors group"
+                  >
+                    <span>Open Badge Passport</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+                  </a>
+                  <a
+                    href="https://badgr.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 text-xs font-medium transition-colors group"
+                  >
+                    <span>Badgr / Canvas</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+                  </a>
+                  <a
+                    href="https://www.credly.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 text-xs font-medium transition-colors group"
+                  >
+                    <span>Credly</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+                  </a>
+                  <a
+                    href="https://www.parchment.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-2.5 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-slate-50 text-xs font-medium transition-colors group"
+                  >
+                    <span>Parchment</span>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-600" />
+                  </a>
+                </div>
+              </div>
+
+              {/* Step 3: Or download JSON / Validate */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                <button
+                  onClick={handleDownloadJson}
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-700 hover:text-slate-900 font-medium"
+                >
+                  <Download className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Descargar archivo .json</span>
+                </button>
+
+                <a
+                  href={badgeCheckUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline font-medium"
+                >
+                  <span>Validar en BadgeCheck.io</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* QR Code view */}
         {showQr && qrCodeUrl && (

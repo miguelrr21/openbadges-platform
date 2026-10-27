@@ -1,12 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
-  ExternalLink,
-  ShieldCheck,
-  Calendar,
-  User,
   ArrowRight
 } from "lucide-react";
 import { LinkedInIcon } from "@/components/icons/LinkedInIcon";
@@ -24,15 +20,8 @@ interface AssertionSummary {
 export default function MyBadgesPage() {
   const [email, setEmail] = useState("");
   const [inputEmail, setInputEmail] = useState("");
-  const [badges, setBadges] = useState<AssertionSummary[]>([]);
+  const [badges, setBadges] = useState<AssertionSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const demoEmail = "asistente@alu.uhu.es";
-    setInputEmail(demoEmail);
-    setEmail(demoEmail);
-    fetchUserBadges(demoEmail);
-  }, []);
 
   const fetchUserBadges = async (targetEmail: string) => {
     setLoading(true);
@@ -74,6 +63,7 @@ export default function MyBadgesPage() {
       setBadges(formatted);
     } catch (err) {
       console.error("Error fetching badges:", err);
+      setBadges([]);
     } finally {
       setLoading(false);
     }
@@ -97,17 +87,17 @@ export default function MyBadgesPage() {
             href="/admin"
             className="text-slate-700 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 font-medium"
           >
-            Emitir Certificados
+            Panel Administrador
           </Link>
         </div>
 
         {/* Search by email */}
         <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs mb-6">
           <h1 className="text-xl font-bold text-slate-900 mb-1">
-            Certificados del Asistente
+            Mis Certificados
           </h1>
           <p className="text-xs text-slate-500 mb-4">
-            Introduce tu correo de la Universidad de Huelva para ver tus insignias:
+            Introduce el correo electrónico con el que te inscribiste en el evento:
           </p>
 
           <form onSubmit={handleSearch} className="flex gap-2">
@@ -123,7 +113,7 @@ export default function MyBadgesPage() {
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors"
             >
-              Buscar
+              Consultar
             </button>
           </form>
         </div>
@@ -131,8 +121,8 @@ export default function MyBadgesPage() {
         {/* Results */}
         <div>
           {loading ? (
-            <p className="text-center text-xs text-slate-400 py-8">Cargando certificados...</p>
-          ) : badges.length === 0 ? (
+            <p className="text-center text-xs text-slate-400 py-8">Buscando certificados...</p>
+          ) : badges === null ? null : badges.length === 0 ? (
             <div className="text-center py-8 bg-white border border-slate-200 rounded-xl text-xs text-slate-500">
               No se han encontrado certificados asociados a {email}.
             </div>
@@ -155,7 +145,7 @@ export default function MyBadgesPage() {
                       href={b.certUrl}
                       className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded-lg transition-colors"
                     >
-                      <span>Ver</span>
+                      <span>Ver Certificado</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
 

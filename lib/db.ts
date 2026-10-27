@@ -1,7 +1,6 @@
 import fs from "fs";
 import path from "path";
 import { IssuerProfile, BadgeClassDefinition, AssertionRecord } from "./types";
-import { hashRecipientEmail } from "./crypto";
 
 interface DatabaseSchema {
   issuer: IssuerProfile;
@@ -12,11 +11,7 @@ interface DatabaseSchema {
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
 
-const DEFAULT_SALT = "gdguhu_salt_2026";
-
 export function getSeedData(): DatabaseSchema {
-  const sampleIdentity = hashRecipientEmail("asistente@alu.uhu.es", DEFAULT_SALT);
-
   return {
     issuer: {
       id: "/api/badges/issuer",
@@ -30,74 +25,8 @@ export function getSeedData(): DatabaseSchema {
         { name: "Coordinación Académica", role: "Faculty Advisor" }
       ]
     },
-    badges: {
-      "69679d9fa12d24f4a673b54b": {
-        id: "69679d9fa12d24f4a673b54b",
-        name: "Hackathon GDGoC UHU",
-        description: "Reconocimiento a la participación destacada, resolución de problemas y desarrollo de software colaborativo durante el Hackathon anual de GDGoC Universidad de Huelva.",
-        criteriaNarrative: "Certificado concedido por la participación y logros técnicos en el Hackathon GDGoC UHU.",
-        image: "/logo/logo.svg",
-        theme: "hackathon",
-        eventDates: "21 - 22 de marzo de 2026",
-        tags: ["Hackathon", "GDGoC UHU", "Desarrollo", "Universidad de Huelva"],
-        createdAt: "2026-03-22T18:00:00.000Z"
-      },
-      "6ae00a61a65e3dd2d40bcb0f": {
-        id: "6ae00a61a65e3dd2d40bcb0f",
-        name: "Jornadas de Desarrollo & Cloud GDGoC UHU",
-        description: "Certificado de asistencia a los talleres y conferencias técnicas organizadas por el Google Developer Group on Campus de la Universidad de Huelva.",
-        criteriaNarrative: "Certificado de asistencia y aprovechamiento de las jornadas técnicas de GDGoC UHU.",
-        image: "/logo/logo.svg",
-        theme: "gdg",
-        eventDates: "27 de octubre de 2026",
-        tags: ["Workshop", "Cloud", "GDGoC UHU"],
-        createdAt: "2026-10-27T10:00:00.000Z"
-      }
-    },
-    assertions: {
-      "69679d9fa12d24f4a673b54b": {
-        id: "69679d9fa12d24f4a673b54b",
-        badgeClassId: "69679d9fa12d24f4a673b54b",
-        recipient: {
-          type: "email",
-          hashed: true,
-          identity: sampleIdentity.identity,
-          salt: DEFAULT_SALT,
-          name: "Alejandro Rodríguez",
-          email: "asistente@alu.uhu.es"
-        },
-        issuedOn: "2026-03-22T18:00:00.000Z",
-        metadata: {
-          rank: "Primer Puesto",
-          group: "Equipo UHU Tech",
-          role: "Participante Ganador",
-          signers: [
-            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
-            { name: "Coordinación UHU", role: "Tutor Académico" }
-          ]
-        }
-      },
-      "6ae00a61a65e3dd2d40bcb0f": {
-        id: "6ae00a61a65e3dd2d40bcb0f",
-        badgeClassId: "6ae00a61a65e3dd2d40bcb0f",
-        recipient: {
-          type: "email",
-          hashed: true,
-          identity: sampleIdentity.identity,
-          salt: DEFAULT_SALT,
-          name: "Alejandro Rodríguez",
-          email: "asistente@alu.uhu.es"
-        },
-        issuedOn: "2026-10-27T10:00:00.000Z",
-        metadata: {
-          role: "Asistente",
-          signers: [
-            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
-            { name: "Coordinación UHU", role: "Tutor Académico" }
-          ]
-        }
-      }
-    }
+    badges: {},
+    assertions: {}
   };
 }
 

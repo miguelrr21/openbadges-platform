@@ -5,10 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search,
-  ArrowRight,
-  ShieldCheck,
-  Award,
-  ExternalLink
+  ShieldCheck
 } from "lucide-react";
 
 export default function HomePage() {
@@ -45,14 +42,14 @@ export default function HomePage() {
               href="/admin"
               className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-1.5 rounded-lg transition-colors"
             >
-              Emitir Certificados
+              Panel Administrador
             </Link>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 max-w-3xl mx-auto px-4 py-12 w-full">
+      <main className="flex-1 max-w-2xl mx-auto px-4 py-16 w-full flex flex-col justify-center">
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full mb-4 font-medium">
             <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
@@ -60,87 +57,41 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-3 tracking-tight">
-            Validador de Certificados GDGoC UHU
+            Validador de Certificados
           </h1>
           <p className="text-sm text-slate-600 max-w-lg mx-auto">
-            Comprueba la validez de los certificados emitidos para eventos, talleres y hackathons universitarios.
+            Introduce el identificador de tu credencial para verificar la autenticidad del certificado emitido por el Google Developer Group on Campus UHU.
           </p>
         </div>
 
         {/* Search */}
-        <form onSubmit={handleSearch} className="max-w-xl mx-auto mb-12">
+        <form onSubmit={handleSearch} className="w-full mb-6">
           <div className="flex items-center border border-slate-300 bg-white rounded-xl shadow-xs overflow-hidden focus-within:border-blue-600">
             <Search className="w-5 h-5 text-slate-400 ml-3.5" />
             <input
               type="text"
               value={searchId}
               onChange={(e) => setSearchId(e.target.value)}
-              placeholder="Introduce el ID del certificado (ej. 69679d9fa12d24f4a673b54b)..."
-              className="flex-1 px-3 py-3 text-xs sm:text-sm bg-transparent focus:outline-none"
+              placeholder="Introduce el ID de tu certificado..."
+              className="flex-1 px-3 py-3.5 text-xs sm:text-sm bg-transparent focus:outline-none"
+              required
             />
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-3 transition-colors"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs px-5 py-3.5 transition-colors"
             >
-              Comprobar
+              Verificar
             </button>
           </div>
         </form>
 
-        {/* Sample Certificates */}
-        <div className="max-w-xl mx-auto">
-          <h2 className="text-xs uppercase font-semibold text-slate-600 mb-3 tracking-wider">
-            Ejemplos de certificados disponibles
-          </h2>
-
-          <div className="space-y-3">
-            {/* Cert 1 */}
-            <Link
-              href="/cert/69679d9fa12d24f4a673b54b"
-              className="block bg-white border border-slate-200 rounded-xl p-4 hover:border-slate-300 hover:shadow-xs transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block mb-1">
-                    Hackathon • Primer Puesto
-                  </span>
-                  <h3 className="font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Hackathon GDGoC UHU
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Destinatario: Alejandro Rodríguez (Equipo UHU Tech)
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
-              </div>
-            </Link>
-
-            {/* Cert 2 */}
-            <Link
-              href="/cert/6ae00a61a65e3dd2d40bcb0f"
-              className="block bg-white border border-slate-200 rounded-xl p-4 hover:border-slate-300 hover:shadow-xs transition-all group"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 inline-block mb-1">
-                    Jornadas & Workshops
-                  </span>
-                  <h3 className="font-semibold text-sm text-slate-900 group-hover:text-blue-600 transition-colors">
-                    Jornadas de Desarrollo & Cloud GDGoC UHU
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Destinatario: Alejandro Rodríguez (Asistente)
-                  </p>
-                </div>
-                <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
-              </div>
-            </Link>
-          </div>
-        </div>
+        <p className="text-center text-xs text-slate-400">
+          Credenciales verificables según la especificación internacional Open Badges v2 (Hosted Badge).
+        </p>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 py-4 text-center text-xs text-slate-600">
+      <footer className="border-t border-slate-200 py-4 text-center text-xs text-slate-500">
         Google Developer Group on Campus - Universidad de Huelva (GDGoC UHU)
       </footer>
     </div>

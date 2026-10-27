@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  ShieldCheck,
   Send,
   PlusCircle,
   Users,
@@ -13,7 +12,6 @@ import {
   Lock,
   LogOut,
   ExternalLink,
-  FileSpreadsheet,
   AlertCircle
 } from "lucide-react";
 
@@ -62,7 +60,6 @@ export default function AdminPage() {
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Check auth on mount
   useEffect(() => {
     checkAuth();
   }, []);
@@ -113,19 +110,19 @@ export default function AdminPage() {
     try {
       const res = await fetch("/api/badges/issue");
       const data = await res.json();
-      setBadges(data.badges || []);
+      const loadedBadges = data.badges || [];
+      setBadges(loadedBadges);
       setAssertions(data.assertions || []);
       setIssuer(data.issuer || null);
-      if (data.badges?.length > 0) {
-        if (!bulkBadgeId) setBulkBadgeId(data.badges[0].id);
-        if (!singleBadgeId) setSingleBadgeId(data.badges[0].id);
+      if (loadedBadges.length > 0) {
+        setBulkBadgeId((prev) => prev || loadedBadges[0].id);
+        setSingleBadgeId((prev) => prev || loadedBadges[0].id);
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Parse bulk text into recipient objects
   const parseBulkText = () => {
     const lines = bulkText.split("\n");
     const recipients: Array<{ name: string; email: string; role?: string; rank?: string; group?: string }> = [];
@@ -134,7 +131,6 @@ export default function AdminPage() {
       const line = rawLine.trim();
       if (!line || line.startsWith("#") || line.toLowerCase().startsWith("nombre,")) continue;
 
-      // Split by comma or semicolon
       const parts = line.split(/[,;\t]/).map((p) => p.trim());
       if (parts.length >= 2) {
         const name = parts[0];
@@ -183,38 +179,6 @@ export default function AdminPage() {
     } finally {
       setBulkLoading(false);
     }
-  };
-
-  const loadSample25Attendees = () => {
-    const sample = [
-      "Alejandro Rodríguez, alejandro.rodriguez@alu.uhu.es, Participante, Primer Puesto, Equipo UHU Tech",
-      "María Santos Domínguez, maria.santos@alu.uhu.es, Participante, Segundo Puesto, ByteBuilders",
-      "Carlos Pérez Garrido, carlos.perez@alu.uhu.es, Participante, Tercer Puesto, CloudRunners",
-      "Lucía Gómez Navarro, lucia.gomez@alu.uhu.es, Asistente",
-      "Javier Morales Ruiz, javier.morales@alu.uhu.es, Asistente",
-      "Elena Benítez Cruz, elena.benitez@alu.uhu.es, Asistente",
-      "David Moreno Vega, david.moreno@alu.uhu.es, Asistente",
-      "Paula Serrano Castro, paula.serrano@alu.uhu.es, Asistente",
-      "Daniel Romero Blanco, daniel.romero@alu.uhu.es, Asistente",
-      "Carmen Ortiz Ramos, carmen.ortiz@alu.uhu.es, Asistente",
-      "Marcos Delgado Flores, marcos.delgado@alu.uhu.es, Asistente",
-      "Irene Gil Mendoza, irene.gil@alu.uhu.es, Asistente",
-      "Rubén Lozano Prieto, ruben.lozano@alu.uhu.es, Asistente",
-      "Marta Reyes Cano, marta.reyes@alu.uhu.es, Asistente",
-      "Álvaro Medina Peña, alvaro.medina@alu.uhu.es, Asistente",
-      "Nuria Soler Aguilar, nuria.soler@alu.uhu.es, Asistente",
-      "Hugo Gallego Pascual, hugo.gallego@alu.uhu.es, Asistente",
-      "Laura Rivas Bravo, laura.rivas@alu.uhu.es, Asistente",
-      "Adrián Iglesias Herrero, adrian.iglesias@alu.uhu.es, Asistente",
-      "Sara Vázquez Vidal, sara.vazquez@alu.uhu.es, Asistente",
-      "Gonzalo Nieto Fuentes, gonzalo.nieto@alu.uhu.es, Asistente",
-      "Cristina Cortés Campos, cristina.cortes@alu.uhu.es, Asistente",
-      "Sergio Cabrera León, sergio.cabrera@alu.uhu.es, Asistente",
-      "Natalia Vargas Soto, natalia.vargas@alu.uhu.es, Asistente",
-      "Pablo Montes Marín, pablo.montes@alu.uhu.es, Asistente"
-    ].join("\n");
-
-    setBulkText(sample);
   };
 
   const copyAllLinks = () => {
@@ -311,7 +275,6 @@ export default function AdminPage() {
     }
   };
 
-  // Loading auth state
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -320,7 +283,7 @@ export default function AdminPage() {
     );
   }
 
-  // LOGIN SCREEN FOR ADMIN ONLY
+  // LOGIN SCREEN
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
@@ -378,7 +341,6 @@ export default function AdminPage() {
     );
   }
 
-  // AUTHENTICATED ADMIN DASHBOARD
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
@@ -413,7 +375,7 @@ export default function AdminPage() {
             }`}
           >
             <Users className="w-4 h-4" />
-            <span>Reparto Masivo (25+ Asistentes)</span>
+            <span>Reparto Masivo (Lote)</span>
           </button>
           <button
             onClick={() => setActiveTab("individual")}
@@ -449,104 +411,105 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* TAB 1: BULK ISSUANCE (25+ PEOPLE) */}
+        {/* TAB 1: BULK ISSUANCE */}
         {activeTab === "bulk" && (
           <div className="space-y-6">
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    Reparto Masivo de Certificados Open Badges
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Pega la lista de asistentes (mínimo 25 personas) para emitir todos los certificados en un solo clic.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={loadSample25Attendees}
-                  className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0"
-                >
-                  <FileSpreadsheet className="w-3.5 h-3.5" />
-                  <span>Cargar plantilla con 25 asistentes</span>
-                </button>
+              <div className="mb-4">
+                <h2 className="text-base font-bold text-slate-900">
+                  Reparto Masivo de Certificados
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Pega la lista de asistentes para emitir los certificados en un solo paso.
+                </p>
               </div>
 
-              <form onSubmit={handleBulkIssue} className="space-y-4 text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Evento / Insignia
-                    </label>
-                    <select
-                      value={bulkBadgeId}
-                      onChange={(e) => setBulkBadgeId(e.target.value)}
-                      className="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-slate-800"
-                      required
-                    >
-                      {badges.map((b) => (
-                        <option key={b.id} value={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-slate-700 mb-1">
-                      Rol por defecto
-                    </label>
-                    <input
-                      type="text"
-                      value={defaultRole}
-                      onChange={(e) => setDefaultRole(e.target.value)}
-                      placeholder="Asistente, Participante..."
-                      className="w-full border border-slate-300 rounded-lg p-2"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-semibold text-slate-700">
-                      Lista de Asistentes (Formato: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">Nombre, Email, Rol, Puesto, Grupo</code>)
-                    </label>
-                    <span className="font-semibold text-blue-600">
-                      {parsedRecipients.length} asistentes detectados
-                    </span>
-                  </div>
-                  <textarea
-                    rows={8}
-                    value={bulkText}
-                    onChange={(e) => setBulkText(e.target.value)}
-                    placeholder={`Alejandro Rodríguez, alejandro@alu.uhu.es\nMaría Santos, maria@alu.uhu.es\nCarlos Pérez, carlos@alu.uhu.es`}
-                    className="w-full border border-slate-300 rounded-lg p-3 font-mono text-[11px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-600"
-                    required
-                  />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Puedes copiar y pegar directamente desde Excel, Google Sheets o un archivo CSV.
-                  </p>
-                </div>
-
-                <div className="pt-2">
+              {badges.length === 0 ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                  Aún no has creado ningún evento o insignia. Ve a la pestaña{" "}
                   <button
-                    type="submit"
-                    disabled={bulkLoading || parsedRecipients.length === 0}
-                    className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-xs"
+                    onClick={() => setActiveTab("create_badge")}
+                    className="font-bold underline text-amber-900"
                   >
-                    <Send className="w-4 h-4" />
-                    <span>
-                      {bulkLoading
-                        ? "Emitiendo certificados..."
-                        : `Emitir certificados a los ${parsedRecipients.length} asistentes`}
-                    </span>
-                  </button>
+                    Crear Evento / Insignia
+                  </button>{" "}
+                  para dar de alta el primer evento antes de emitir certificados.
                 </div>
-              </form>
+              ) : (
+                <form onSubmit={handleBulkIssue} className="space-y-4 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Evento / Insignia
+                      </label>
+                      <select
+                        value={bulkBadgeId}
+                        onChange={(e) => setBulkBadgeId(e.target.value)}
+                        className="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-slate-800"
+                        required
+                      >
+                        {badges.map((b) => (
+                          <option key={b.id} value={b.id}>
+                            {b.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-slate-700 mb-1">
+                        Rol por defecto
+                      </label>
+                      <input
+                        type="text"
+                        value={defaultRole}
+                        onChange={(e) => setDefaultRole(e.target.value)}
+                        placeholder="Asistente, Participante..."
+                        className="w-full border border-slate-300 rounded-lg p-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700">
+                        Lista de Asistentes (Formato: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">Nombre, Email, Rol, Puesto, Grupo</code>)
+                      </label>
+                      <span className="font-semibold text-blue-600">
+                        {parsedRecipients.length} asistentes detectados
+                      </span>
+                    </div>
+                    <textarea
+                      rows={8}
+                      value={bulkText}
+                      onChange={(e) => setBulkText(e.target.value)}
+                      placeholder={`Carmen Gómez, carmen@alu.uhu.es\nDavid Moreno, david@alu.uhu.es\nElena Benítez, elena@alu.uhu.es`}
+                      className="w-full border border-slate-300 rounded-lg p-3 font-mono text-[11px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-600"
+                      required
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      Puedes copiar y pegar directamente desde Excel o Google Sheets.
+                    </p>
+                  </div>
+
+                  <div className="pt-2">
+                    <button
+                      type="submit"
+                      disabled={bulkLoading || parsedRecipients.length === 0}
+                      className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-xs"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>
+                        {bulkLoading
+                          ? "Emitiendo certificados..."
+                          : `Emitir certificados a los ${parsedRecipients.length} asistentes`}
+                      </span>
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
-            {/* Results of bulk issuance */}
             {bulkResults && (
               <div className="bg-white border border-emerald-200 rounded-xl p-6 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
@@ -621,99 +584,111 @@ export default function AdminPage() {
               Emitir Certificado Individual
             </h2>
 
-            <form onSubmit={handleSingleIssue} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Evento / Insignia
-                </label>
-                <select
-                  value={singleBadgeId}
-                  onChange={(e) => setSingleBadgeId(e.target.value)}
-                  className="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-slate-800"
-                  required
+            {badges.length === 0 ? (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
+                Aún no has creado ningún evento o insignia. Crea uno primero en la pestaña{" "}
+                <button
+                  onClick={() => setActiveTab("create_badge")}
+                  className="font-bold underline text-amber-900"
                 >
-                  {badges.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  Crear Evento / Insignia
+                </button>.
               </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Nombre Completo
-                </label>
-                <input
-                  type="text"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  placeholder="Ej. Carmen Gómez"
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
-                  placeholder="carmen@alu.uhu.es"
-                  className="w-full border border-slate-300 rounded-lg p-2"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-2">
+            ) : (
+              <form onSubmit={handleSingleIssue} className="space-y-4 text-xs">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Rol</label>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Evento / Insignia
+                  </label>
+                  <select
+                    value={singleBadgeId}
+                    onChange={(e) => setSingleBadgeId(e.target.value)}
+                    className="w-full border border-slate-300 rounded-lg p-2 bg-slate-50 text-slate-800"
+                    required
+                  >
+                    {badges.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Nombre Completo
+                  </label>
                   <input
                     type="text"
-                    value={singleRole}
-                    onChange={(e) => setSingleRole(e.target.value)}
-                    placeholder="Asistente..."
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    placeholder="Ej. Carmen Gómez"
                     className="w-full border border-slate-300 rounded-lg p-2"
+                    required
                   />
                 </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Puesto / Medalla</label>
-                  <input
-                    type="text"
-                    value={singleRank}
-                    onChange={(e) => setSingleRank(e.target.value)}
-                    placeholder="Opcional..."
-                    className="w-full border border-slate-300 rounded-lg p-2"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Grupo / Equipo</label>
-                  <input
-                    type="text"
-                    value={singleGroup}
-                    onChange={(e) => setSingleGroup(e.target.value)}
-                    placeholder="Opcional..."
-                    className="w-full border border-slate-300 rounded-lg p-2"
-                  />
-                </div>
-              </div>
 
-              {singleStatus && (
-                <div className="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
-                  {singleStatus}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={recipientEmail}
+                    onChange={(e) => setRecipientEmail(e.target.value)}
+                    placeholder="carmen@alu.uhu.es"
+                    className="w-full border border-slate-300 rounded-lg p-2"
+                    required
+                  />
                 </div>
-              )}
 
-              <button
-                type="submit"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
-              >
-                Emitir Certificado
-              </button>
-            </form>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Rol</label>
+                    <input
+                      type="text"
+                      value={singleRole}
+                      onChange={(e) => setSingleRole(e.target.value)}
+                      placeholder="Asistente..."
+                      className="w-full border border-slate-300 rounded-lg p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Puesto / Medalla</label>
+                    <input
+                      type="text"
+                      value={singleRank}
+                      onChange={(e) => setSingleRank(e.target.value)}
+                      placeholder="Opcional..."
+                      className="w-full border border-slate-300 rounded-lg p-2"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">Grupo / Equipo</label>
+                    <input
+                      type="text"
+                      value={singleGroup}
+                      onChange={(e) => setSingleGroup(e.target.value)}
+                      placeholder="Opcional..."
+                      className="w-full border border-slate-300 rounded-lg p-2"
+                    />
+                  </div>
+                </div>
+
+                {singleStatus && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
+                    {singleStatus}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg transition-colors"
+                >
+                  Emitir Certificado
+                </button>
+              </form>
+            )}
           </div>
         )}
 
@@ -733,7 +708,7 @@ export default function AdminPage() {
                   type="text"
                   value={badgeName}
                   onChange={(e) => setBadgeName(e.target.value)}
-                  placeholder="Ej. Taller de Flutter & Firebase GDGoC UHU"
+                  placeholder="Ej. Hackathon GDGoC UHU 2026"
                   className="w-full border border-slate-300 rounded-lg p-2"
                   required
                 />
@@ -770,7 +745,7 @@ export default function AdminPage() {
                     type="text"
                     value={eventDates}
                     onChange={(e) => setEventDates(e.target.value)}
-                    placeholder="Ej. Noviembre 2026"
+                    placeholder="Ej. Marzo 2026"
                     className="w-full border border-slate-300 rounded-lg p-2"
                   />
                 </div>
@@ -795,62 +770,68 @@ export default function AdminPage() {
         {/* TAB 4: ISSUED LIST */}
         {activeTab === "issued_list" && (
           <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-600 font-semibold">
-                  <th className="pb-2">ID</th>
-                  <th className="pb-2">Destinatario</th>
-                  <th className="pb-2">Email</th>
-                  <th className="pb-2">Evento</th>
-                  <th className="pb-2">Fecha</th>
-                  <th className="pb-2 text-right">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {assertions.map((a) => {
-                  const b = badges.find((badge) => badge.id === a.badgeClassId);
-                  return (
-                    <tr key={a.id} className="hover:bg-slate-50">
-                      <td className="py-2.5 font-mono text-slate-500">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(a.id);
-                            setCopiedId(a.id);
-                            setTimeout(() => setCopiedId(null), 2000);
-                          }}
-                          className="hover:underline flex items-center gap-1"
-                        >
-                          <span>{a.id.slice(0, 8)}...</span>
-                          {copiedId === a.id ? (
-                            <Check className="w-3 h-3 text-emerald-600" />
-                          ) : (
-                            <Copy className="w-3 h-3 text-slate-400" />
-                          )}
-                        </button>
-                      </td>
-                      <td className="py-2.5 font-semibold text-slate-800">
-                        {a.recipient.name}
-                      </td>
-                      <td className="py-2.5 text-slate-500">{a.recipient.email}</td>
-                      <td className="py-2.5 text-slate-600">{b?.name || a.badgeClassId}</td>
-                      <td className="py-2.5 text-slate-400">
-                        {new Date(a.issuedOn).toLocaleDateString()}
-                      </td>
-                      <td className="py-2.5 text-right">
-                        <Link
-                          href={`/cert/${a.id}`}
-                          target="_blank"
-                          className="text-blue-600 hover:underline inline-flex items-center gap-0.5"
-                        >
-                          <span>Ver</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            {assertions.length === 0 ? (
+              <p className="text-center text-xs text-slate-400 py-6">
+                Aún no se ha emitido ningún certificado.
+              </p>
+            ) : (
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-600 font-semibold">
+                    <th className="pb-2">ID</th>
+                    <th className="pb-2">Destinatario</th>
+                    <th className="pb-2">Email</th>
+                    <th className="pb-2">Evento</th>
+                    <th className="pb-2">Fecha</th>
+                    <th className="pb-2 text-right">Acción</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {assertions.map((a) => {
+                    const b = badges.find((badge) => badge.id === a.badgeClassId);
+                    return (
+                      <tr key={a.id} className="hover:bg-slate-50">
+                        <td className="py-2.5 font-mono text-slate-500">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(a.id);
+                              setCopiedId(a.id);
+                              setTimeout(() => setCopiedId(null), 2000);
+                            }}
+                            className="hover:underline flex items-center gap-1"
+                          >
+                            <span>{a.id.slice(0, 8)}...</span>
+                            {copiedId === a.id ? (
+                              <Check className="w-3 h-3 text-emerald-600" />
+                            ) : (
+                              <Copy className="w-3 h-3 text-slate-400" />
+                            )}
+                          </button>
+                        </td>
+                        <td className="py-2.5 font-semibold text-slate-800">
+                          {a.recipient.name}
+                        </td>
+                        <td className="py-2.5 text-slate-500">{a.recipient.email}</td>
+                        <td className="py-2.5 text-slate-600">{b?.name || a.badgeClassId}</td>
+                        <td className="py-2.5 text-slate-400">
+                          {new Date(a.issuedOn).toLocaleDateString()}
+                        </td>
+                        <td className="py-2.5 text-right">
+                          <Link
+                            href={`/cert/${a.id}`}
+                            target="_blank"
+                            className="text-blue-600 hover:underline inline-flex items-center gap-0.5"
+                          >
+                            <span>Ver</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         )}
       </div>

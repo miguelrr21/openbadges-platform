@@ -8,102 +8,15 @@
     "description": "GDGoC UHU (Google Developer Group on Campus Universidad de Huelva) es la comunidad tecnológica universitaria de la Universidad de Huelva.",
     "signers": [
       {
-        "name": "Equipo Directivo GDGoC UHU",
-        "role": "Lead"
+        "name": "Organización GDGoC UHU",
+        "role": "Chapter Lead"
       },
       {
-        "name": "Coordinación Universitaria",
+        "name": "Coordinación Académica",
         "role": "Faculty Advisor"
       }
     ]
   },
-  "badges": {
-    "69679d9fa12d24f4a673b54b": {
-      "id": "69679d9fa12d24f4a673b54b",
-      "name": "Hackathon GDGoC UHU",
-      "description": "Reconocimiento a la participación destacada, resolución de problemas y desarrollo de software colaborativo durante el Hackathon anual de GDGoC Universidad de Huelva.",
-      "criteriaNarrative": "Certificado concedido por la participación y logros técnicos en el Hackathon GDGoC UHU.",
-      "image": "/logo/logo.svg",
-      "theme": "hackathon",
-      "eventDates": "21 - 22 de marzo de 2026",
-      "tags": [
-        "Hackathon",
-        "GDGoC UHU",
-        "Desarrollo",
-        "Universidad de Huelva"
-      ],
-      "createdAt": "2026-03-22T18:00:00.000Z"
-    },
-    "6ae00a61a65e3dd2d40bcb0f": {
-      "id": "6ae00a61a65e3dd2d40bcb0f",
-      "name": "Jornadas de Desarrollo & Cloud GDGoC UHU",
-      "description": "Certificado de asistencia a los talleres y conferencias técnicas organizadas por el Google Developer Group on Campus de la Universidad de Huelva.",
-      "criteriaNarrative": "Certificado de asistencia y aprovechamiento de las jornadas técnicas de GDGoC UHU.",
-      "image": "/logo/logo.svg",
-      "theme": "gdg",
-      "eventDates": "27 de octubre de 2026",
-      "tags": [
-        "Workshop",
-        "Cloud",
-        "GDGoC UHU"
-      ],
-      "createdAt": "2026-10-27T10:00:00.000Z"
-    }
-  },
-  "assertions": {
-    "69679d9fa12d24f4a673b54b": {
-      "id": "69679d9fa12d24f4a673b54b",
-      "badgeClassId": "69679d9fa12d24f4a673b54b",
-      "recipient": {
-        "type": "email",
-        "hashed": true,
-        "identity": "sha256$e3ffc92ddd62238494d803627f032fc7fe0676c02891a497d90b5ed845d1557c",
-        "salt": "gdguhu_salt_2026",
-        "name": "Alejandro Rodríguez",
-        "email": "asistente@alu.uhu.es"
-      },
-      "issuedOn": "2026-03-22T18:00:00.000Z",
-      "metadata": {
-        "rank": "Primer Puesto",
-        "group": "Equipo UHU Tech",
-        "role": "Participante Ganador",
-        "signers": [
-          {
-            "name": "Equipo Directivo",
-            "role": "Lead GDGoC UHU"
-          },
-          {
-            "name": "Coordinación UHU",
-            "role": "Tutor Académico"
-          }
-        ]
-      }
-    },
-    "6ae00a61a65e3dd2d40bcb0f": {
-      "id": "6ae00a61a65e3dd2d40bcb0f",
-      "badgeClassId": "6ae00a61a65e3dd2d40bcb0f",
-      "recipient": {
-        "type": "email",
-        "hashed": true,
-        "identity": "sha256$e3ffc92ddd62238494d803627f032fc7fe0676c02891a497d90b5ed845d1557c",
-        "salt": "gdguhu_salt_2026",
-        "name": "Alejandro Rodríguez",
-        "email": "asistente@alu.uhu.es"
-      },
-      "issuedOn": "2026-10-27T10:00:00.000Z",
-      "metadata": {
-        "role": "Asistente",
-        "signers": [
-          {
-            "name": "Equipo Directivo",
-            "role": "Lead GDGoC UHU"
-          },
-          {
-            "name": "Coordinación UHU",
-            "role": "Tutor Académico"
-          }
-        ]
-      }
-    }
-  }
+  "badges": {},
+  "assertions": {}
 }

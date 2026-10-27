@@ -10,6 +10,7 @@ import {
 import { generateAssertionId, hashRecipientEmail } from "@/lib/crypto";
 import { formatBaseUrl } from "@/lib/urls";
 import { verifyAdminSessionToken, validateAdminPassword } from "@/lib/auth";
+import { isValidEmail, MAX_BULK_RECIPIENTS, sanitizeText } from "@/lib/validation";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -60,19 +61,20 @@ export async function POST(request: NextRequest) {
 
     if (action === "create_badge") {
       const { name, description, criteriaNarrative, theme, eventDates, tags, image } = body;
-      if (!name) {
+      const cleanName = sanitizeText(name, 120);
+      if (!cleanName) {
         return NextResponse.json({ error: "El nombre de la insignia es obligatorio" }, { status: 400 });
       }
 
       const id = generateAssertionId();
       const newBadge = await createBadgeClass({
         id,
-        name,
-        description: description || "",
-        criteriaNarrative: criteriaNarrative || `Certificado concedido por ${name}.`,
+        name: cleanName,
+        description: sanitizeText(description, 500) || "",
+        criteriaNarrative: sanitizeText(criteriaNarrative, 300) || `Certificado concedido por ${cleanName}.`,
         image: image || "/logo/logo.svg",
-        theme: theme || "gdg",
-        eventDates: eventDates || new Date().toLocaleDateString("es-ES"),
+        theme: theme === "hackathon" ? "hackathon" : "gdg",
+        eventDates: sanitizeText(eventDates, 80) || new Date().toLocaleDateString("es-ES"),
         tags: tags || ["GDGoC UHU", "Certificado"],
         createdAt: new Date().toISOString()
       });
@@ -87,9 +89,19 @@ export async function POST(request: NextRequest) {
     if (action === "issue_assertion") {
       const { badgeClassId, recipientName, recipientEmail, rank, group, role } = body;
 
-      if (!badgeClassId || !recipientName || !recipientEmail) {
+      const cleanName = sanitizeText(recipientName, 100);
+      const cleanEmail = (recipientEmail || "").trim().toLowerCase();
+
+      if (!badgeClassId || !cleanName || !cleanEmail) {
         return NextResponse.json(
           { error: "badgeClassId, recipientName y recipientEmail son obligatorios" },
+          { status: 400 }
+        );
+      }
+
+      if (!isValidEmail(cleanEmail)) {
+        return NextResponse.json(
+          { error: "El correo electrónico no tiene un formato válido" },
           { status: 400 }
         );
       }
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
 
       const id = generateAssertionId();
       const salt = `salt_${id.slice(0, 8)}`;
-      const { identity } = hashRecipientEmail(recipientEmail, salt);
+      const { identity } = hashRecipientEmail(cleanEmail, salt);
 
       const assertion = await createAssertion({
         id,
@@ -111,17 +123,17 @@ export async function POST(request: NextRequest) {
           hashed: true,
           identity,
           salt,
-          name: recipientName.trim(),
-          email: recipientEmail.trim().toLowerCase()
+          name: cleanName,
+          email: cleanEmail
         },
         issuedOn: new Date().toISOString(),
         metadata: {
-          rank: rank || undefined,
-          group: group || undefined,
-          role: role || "Asistente",
+          rank: sanitizeText(rank, 50) || undefined,
+          group: sanitizeText(group, 50) || undefined,
+          role: sanitizeText(role, 50) || "Asistente",
           signers: [
-            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
-            { name: "Coordinación UHU", role: "Tutor Académico" }
+            { name: "Organización GDGoC UHU", role: "Chapter Lead" },
+            { name: "Coordinación Académica", role: "Faculty Advisor" }
           ]
         }
       });
@@ -134,13 +146,23 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // BULK ISSUANCE (25+ attendees at once)
+    // BULK ISSUANCE
     if (action === "bulk_issue_assertions") {
       const { badgeClassId, recipients } = body;
 
       if (!badgeClassId || !Array.isArray(recipients) || recipients.length === 0) {
         return NextResponse.json(
           { error: "badgeClassId y una lista de recipients son obligatorios" },
+          { status: 400 }
+        );
+      }
+
+      // Enforce batch size limit to protect serverless timeout
+      if (recipients.length > MAX_BULK_RECIPIENTS) {
+        return NextResponse.json(
+          {
+            error: `El límite máximo por lote es de ${MAX_BULK_RECIPIENTS} participantes para asegurar el rendimiento en Vercel. Por favor divide la lista.`
+          },
           { status: 400 }
         );
       }
@@ -153,10 +175,11 @@ export async function POST(request: NextRequest) {
       const issuedList = [];
 
       for (const item of recipients) {
-        const name = (item.name || "").trim();
+        const name = sanitizeText(item.name, 100);
         const email = (item.email || "").trim().toLowerCase();
 
-        if (!name || !email) continue;
+        // Validate both name and email format
+        if (!name || !isValidEmail(email)) continue;
 
         const id = generateAssertionId();
         const salt = `salt_${id.slice(0, 8)}`;
@@ -175,12 +198,12 @@ export async function POST(request: NextRequest) {
           },
           issuedOn: new Date().toISOString(),
           metadata: {
-            rank: item.rank?.trim() || undefined,
-            group: item.group?.trim() || undefined,
-            role: item.role?.trim() || "Asistente",
+            rank: sanitizeText(item.rank, 50) || undefined,
+            group: sanitizeText(item.group, 50) || undefined,
+            role: sanitizeText(item.role, 50) || "Asistente",
             signers: [
-              { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
-              { name: "Coordinación UHU", role: "Tutor Académico" }
+              { name: "Organización GDGoC UHU", role: "Chapter Lead" },
+              { name: "Coordinación Académica", role: "Faculty Advisor" }
             ]
           }
         });

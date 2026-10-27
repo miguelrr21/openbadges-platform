@@ -14,6 +14,7 @@ import {
   ExternalLink,
   AlertCircle
 } from "lucide-react";
+import { isValidEmail, MAX_BULK_RECIPIENTS } from "@/lib/validation";
 
 interface IssuedItem {
   id: string;
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [passwordInput, setPasswordInput] = useState("");
   const [authError, setAuthError] = useState<string | null>(null);
+  const [loginLoading, setLoginLoading] = useState(false);
 
   const [activeTab, setActiveTab] = useState<"bulk" | "individual" | "create_badge" | "issued_list">("bulk");
   const [badges, setBadges] = useState<any[]>([]);
@@ -82,6 +84,7 @@ export default function AdminPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
+    setLoginLoading(true);
     try {
       const res = await fetch("/api/admin/auth", {
         method: "POST",
@@ -98,6 +101,8 @@ export default function AdminPage() {
       }
     } catch {
       setAuthError("Error de conexión");
+    } finally {
+      setLoginLoading(false);
     }
   };
 
@@ -126,6 +131,7 @@ export default function AdminPage() {
   const parseBulkText = () => {
     const lines = bulkText.split("\n");
     const recipients: Array<{ name: string; email: string; role?: string; rank?: string; group?: string }> = [];
+    let invalidCount = 0;
 
     for (const rawLine of lines) {
       const line = rawLine.trim();
@@ -134,24 +140,29 @@ export default function AdminPage() {
       const parts = line.split(/[,;\t]/).map((p) => p.trim());
       if (parts.length >= 2) {
         const name = parts[0];
-        const email = parts[1];
+        const email = parts[1].toLowerCase();
         const role = parts[2] || defaultRole;
         const rank = parts[3] || undefined;
         const group = parts[4] || undefined;
 
-        if (name && email && email.includes("@")) {
+        if (name && isValidEmail(email)) {
           recipients.push({ name, email, role, rank, group });
+        } else {
+          invalidCount++;
         }
+      } else {
+        invalidCount++;
       }
     }
-    return recipients;
+    return { recipients, invalidCount };
   };
 
-  const parsedRecipients = parseBulkText();
+  const { recipients: parsedRecipients, invalidCount: invalidLinesCount } = parseBulkText();
+  const isOverLimit = parsedRecipients.length > MAX_BULK_RECIPIENTS;
 
   const handleBulkIssue = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (parsedRecipients.length === 0) return;
+    if (parsedRecipients.length === 0 || isOverLimit) return;
 
     setBulkLoading(true);
     setBulkResults(null);
@@ -212,6 +223,11 @@ export default function AdminPage() {
 
   const handleSingleIssue = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(recipientEmail)) {
+      setSingleStatus("Error: El correo electrónico no tiene un formato válido.");
+      return;
+    }
+
     setSingleStatus("Emitiendo...");
     try {
       const res = await fetch("/api/badges/issue", {
@@ -325,9 +341,10 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-xs"
+              disabled={loginLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold text-xs py-2.5 rounded-xl transition-colors shadow-xs"
             >
-              Acceder al Panel
+              {loginLoading ? "Comprobando..." : "Acceder al Panel"}
             </button>
           </form>
 
@@ -420,7 +437,7 @@ export default function AdminPage() {
                   Reparto Masivo de Certificados
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Pega la lista de asistentes para emitir los certificados en un solo paso.
+                  Pega la lista de asistentes (máximo {MAX_BULK_RECIPIENTS} por tanda) para emitir los certificados en un solo paso.
                 </p>
               </div>
 
@@ -475,9 +492,16 @@ export default function AdminPage() {
                       <label className="font-semibold text-slate-700">
                         Lista de Asistentes (Formato: <code className="bg-slate-100 px-1 py-0.5 rounded font-mono">Nombre, Email, Rol, Puesto, Grupo</code>)
                       </label>
-                      <span className="font-semibold text-blue-600">
-                        {parsedRecipients.length} asistentes detectados
-                      </span>
+                      <div className="text-right">
+                        <span className={`font-semibold ${isOverLimit ? "text-rose-600 font-bold" : "text-blue-600"}`}>
+                          {parsedRecipients.length} / {MAX_BULK_RECIPIENTS} asistentes válidos
+                        </span>
+                        {invalidLinesCount > 0 && (
+                          <span className="text-amber-600 text-[11px] ml-1.5">
+                            ({invalidLinesCount} con formato inválido ignorados)
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <textarea
                       rows={8}
@@ -487,15 +511,20 @@ export default function AdminPage() {
                       className="w-full border border-slate-300 rounded-lg p-3 font-mono text-[11px] leading-relaxed focus:outline-none focus:ring-1 focus:ring-blue-600"
                       required
                     />
+                    {isOverLimit && (
+                      <p className="text-xs text-rose-600 font-medium mt-1">
+                        Has superado el límite de {MAX_BULK_RECIPIENTS} participantes por lote. Por favor, divide la lista en dos tandas para no superar el tiempo máximo de ejecución.
+                      </p>
+                    )}
                     <p className="text-[11px] text-slate-400 mt-1">
-                      Puedes copiar y pegar directamente desde Excel o Google Sheets.
+                      Puedes copiar y pegar directamente desde Excel o Google Sheets. Solo se procesarán correos electrónicos con formato válido.
                     </p>
                   </div>
 
                   <div className="pt-2">
                     <button
                       type="submit"
-                      disabled={bulkLoading || parsedRecipients.length === 0}
+                      disabled={bulkLoading || parsedRecipients.length === 0 || isOverLimit}
                       className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-xs"
                     >
                       <Send className="w-4 h-4" />
@@ -676,7 +705,7 @@ export default function AdminPage() {
                 </div>
 
                 {singleStatus && (
-                  <div className="p-3 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
+                  <div className={`p-3 rounded-lg ${singleStatus.startsWith("Error") ? "bg-rose-50 border border-rose-200 text-rose-700" : "bg-blue-50 border border-blue-200 text-blue-700"}`}>
                     {singleStatus}
                   </div>
                 )}

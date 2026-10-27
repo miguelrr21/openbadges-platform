@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
     const { password } = await request.json();
 
     if (!password || !validateAdminPassword(password)) {
+      // Artificial delay to prevent automated high-speed brute-force attacks
+      await new Promise((resolve) => setTimeout(resolve, 800));
       return NextResponse.json({ error: "Clave de administrador incorrecta" }, { status: 401 });
     }
 

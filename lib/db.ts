@@ -9,17 +9,23 @@ interface DatabaseSchema {
   assertions: Record<string, AssertionRecord>;
 }
 
-const REDIS_KEY = "openbadges_db";
+const REDIS_KEY = "openbadges_db_v2";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
 const TMP_PATH = path.join("/tmp", "openbadges_store.json");
 
-// In-memory global cache for serverless invocation lifecycle
 let memoryCache: DatabaseSchema | null = null;
 
 function getRedisClient(): Redis | null {
-  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const url =
+    process.env.KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.REDIS_REST_API_URL;
+  const token =
+    process.env.KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.REDIS_REST_API_TOKEN;
+
   if (url && token) {
     return new Redis({ url, token });
   }
@@ -50,7 +56,7 @@ function loadLocalFile(): DatabaseSchema {
     return memoryCache;
   }
 
-  // 1. Try DB_PATH (project data/store.json)
+  // 1. Try DB_PATH
   try {
     if (fs.existsSync(DB_PATH)) {
       const content = fs.readFileSync(DB_PATH, "utf-8");
@@ -59,7 +65,7 @@ function loadLocalFile(): DatabaseSchema {
     }
   } catch {}
 
-  // 2. Try /tmp path (serverless fallback)
+  // 2. Try /tmp path
   try {
     if (fs.existsSync(TMP_PATH)) {
       const content = fs.readFileSync(TMP_PATH, "utf-8");
@@ -68,7 +74,6 @@ function loadLocalFile(): DatabaseSchema {
     }
   } catch {}
 
-  // 3. Fallback to seed
   const seed = getSeedData();
   memoryCache = seed;
   saveLocalFile(seed);
@@ -78,7 +83,6 @@ function loadLocalFile(): DatabaseSchema {
 function saveLocalFile(data: DatabaseSchema): void {
   memoryCache = data;
 
-  // Try writing to data/store.json
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -86,7 +90,6 @@ function saveLocalFile(data: DatabaseSchema): void {
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
     return;
   } catch {
-    // If running in read-only environment like Vercel, fallback to /tmp
     try {
       fs.writeFileSync(TMP_PATH, JSON.stringify(data, null, 2), "utf-8");
     } catch {}
@@ -97,14 +100,27 @@ async function loadDatabase(): Promise<DatabaseSchema> {
   const redis = getRedisClient();
   if (redis) {
     try {
-      const data = await redis.get<DatabaseSchema>(REDIS_KEY);
-      if (data && data.issuer) {
-        memoryCache = data;
-        return data;
+      let raw = await redis.get<any>(REDIS_KEY);
+
+      // Handle if returned as string
+      if (typeof raw === "string") {
+        try {
+          raw = JSON.parse(raw);
+        } catch {}
       }
-      // Seed redis on first run
+
+      if (raw && typeof raw === "object") {
+        if (!raw.badges) raw.badges = {};
+        if (!raw.assertions) raw.assertions = {};
+        if (!raw.issuer) raw.issuer = getSeedData().issuer;
+
+        memoryCache = raw;
+        return raw;
+      }
+
+      // Seed if key does not exist yet
       const seed = loadLocalFile();
-      await redis.set(REDIS_KEY, seed);
+      await redis.set(REDIS_KEY, JSON.stringify(seed));
       memoryCache = seed;
       return seed;
     } catch (err) {
@@ -122,7 +138,7 @@ async function saveDatabase(data: DatabaseSchema): Promise<void> {
   const redis = getRedisClient();
   if (redis) {
     try {
-      await redis.set(REDIS_KEY, data);
+      await redis.set(REDIS_KEY, JSON.stringify(data));
     } catch (err) {
       console.error("Error writing to Redis/KV:", err);
     }

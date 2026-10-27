@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildOpenBadgesAssertion, formatBaseUrl } from "@/lib/openbadges";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -22,7 +25,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/json; charset=utf-8",
       "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600"
+      "Cache-Control": "no-store, max-age=0"
     }
   });
 }

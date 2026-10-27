@@ -8,7 +8,8 @@ import {
   getIssuer
 } from "@/lib/db";
 import { generateAssertionId, hashRecipientEmail } from "@/lib/crypto";
-import { formatBaseUrl } from "@/lib/openbadges";
+import { formatBaseUrl } from "@/lib/urls";
+import { verifyAdminSessionToken, getAdminPassword } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -30,6 +31,22 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Authentication check: verify admin cookie or bearer header
+  const token = request.cookies.get("admin_session")?.value;
+  const authHeader = request.headers.get("authorization");
+  const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  const isAuth =
+    verifyAdminSessionToken(token) ||
+    (bearerToken && bearerToken === getAdminPassword());
+
+  if (!isAuth) {
+    return NextResponse.json(
+      { error: "No autorizado. Debes iniciar sesión como administrador para emitir certificados." },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
     const { action } = body;
@@ -48,11 +65,11 @@ export async function POST(request: NextRequest) {
         id,
         name,
         description: description || "",
-        criteriaNarrative: criteriaNarrative || `Certificate awarded for ${name}.`,
-        image: image || "https://gdguam.es/logo/logo.svg",
+        criteriaNarrative: criteriaNarrative || `Certificado concedido por ${name}.`,
+        image: image || "/logo/logo.svg",
         theme: theme || "gdg",
-        eventDates: eventDates || new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
-        tags: tags || ["GDG", "Certificate"],
+        eventDates: eventDates || new Date().toLocaleDateString("es-ES"),
+        tags: tags || ["GDGoC UHU", "Certificado"],
         createdAt: new Date().toISOString()
       });
 
@@ -97,10 +114,10 @@ export async function POST(request: NextRequest) {
         metadata: {
           rank: rank || undefined,
           group: group || undefined,
-          role: role || "Attendee",
+          role: role || "Asistente",
           signers: [
-            { name: "José Arbeláez Nieto", role: "President" },
-            { name: "Héctor Tablero Díaz", role: "Vicepresident" }
+            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
+            { name: "Coordinación UHU", role: "Tutor Académico" }
           ]
         }
       });
@@ -110,6 +127,73 @@ export async function POST(request: NextRequest) {
         assertion,
         certUrl: `${baseUrl}/cert/${assertion.id}`,
         assertionUrl: `${baseUrl}/api/badges/assertion/${assertion.id}`
+      });
+    }
+
+    // BULK ISSUANCE (25+ attendees at once)
+    if (action === "bulk_issue_assertions") {
+      const { badgeClassId, recipients } = body;
+
+      if (!badgeClassId || !Array.isArray(recipients) || recipients.length === 0) {
+        return NextResponse.json(
+          { error: "badgeClassId y una lista de recipients son obligatorios" },
+          { status: 400 }
+        );
+      }
+
+      const badge = getBadgeClass(badgeClassId);
+      if (!badge) {
+        return NextResponse.json({ error: "La insignia indicada no existe" }, { status: 404 });
+      }
+
+      const issuedList = [];
+
+      for (const item of recipients) {
+        const name = (item.name || "").trim();
+        const email = (item.email || "").trim().toLowerCase();
+
+        if (!name || !email) continue;
+
+        const id = generateAssertionId();
+        const salt = `salt_${id.slice(0, 8)}`;
+        const { identity } = hashRecipientEmail(email, salt);
+
+        const assertion = createAssertion({
+          id,
+          badgeClassId,
+          recipient: {
+            type: "email",
+            hashed: true,
+            identity,
+            salt,
+            name,
+            email
+          },
+          issuedOn: new Date().toISOString(),
+          metadata: {
+            rank: item.rank?.trim() || undefined,
+            group: item.group?.trim() || undefined,
+            role: item.role?.trim() || "Asistente",
+            signers: [
+              { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
+              { name: "Coordinación UHU", role: "Tutor Académico" }
+            ]
+          }
+        });
+
+        issuedList.push({
+          id: assertion.id,
+          name: assertion.recipient.name,
+          email: assertion.recipient.email,
+          certUrl: `${baseUrl}/cert/${assertion.id}`,
+          assertionUrl: `${baseUrl}/api/badges/assertion/${assertion.id}`
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        count: issuedList.length,
+        issued: issuedList
       });
     }
 

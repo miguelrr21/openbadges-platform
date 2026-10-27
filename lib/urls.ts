@@ -1,6 +1,13 @@
 export function formatBaseUrl(rawHost?: string | null): string {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "");
+    const url = process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, "");
+    return url.startsWith("http") ? url : `https://${url}`;
+  }
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.replace(/\/$/, "");
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`.replace(/\/$/, "");
   }
   if (!rawHost) {
     return "http://localhost:3000";

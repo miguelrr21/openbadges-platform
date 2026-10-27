@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import { Redis } from "@upstash/redis";
 import { IssuerProfile, BadgeClassDefinition, AssertionRecord } from "./types";
 
 interface DatabaseSchema {
@@ -8,8 +9,22 @@ interface DatabaseSchema {
   assertions: Record<string, AssertionRecord>;
 }
 
+const REDIS_KEY = "openbadges_db";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
+const TMP_PATH = path.join("/tmp", "openbadges_store.json");
+
+// In-memory global cache for serverless invocation lifecycle
+let memoryCache: DatabaseSchema | null = null;
+
+function getRedisClient(): Redis | null {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (url && token) {
+    return new Redis({ url, token });
+  }
+  return null;
+}
 
 export function getSeedData(): DatabaseSchema {
   return {
@@ -30,85 +45,140 @@ export function getSeedData(): DatabaseSchema {
   };
 }
 
-function ensureDataFile(): DatabaseSchema {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(DB_PATH)) {
-      const seed = getSeedData();
-      fs.writeFileSync(DB_PATH, JSON.stringify(seed, null, 2), "utf-8");
-      return seed;
-    }
-    const content = fs.readFileSync(DB_PATH, "utf-8");
-    return JSON.parse(content);
-  } catch (err) {
-    console.error("Error reading db file, using seed fallback:", err);
-    return getSeedData();
+function loadLocalFile(): DatabaseSchema {
+  if (memoryCache) {
+    return memoryCache;
   }
+
+  // 1. Try DB_PATH (project data/store.json)
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      const content = fs.readFileSync(DB_PATH, "utf-8");
+      memoryCache = JSON.parse(content);
+      return memoryCache!;
+    }
+  } catch {}
+
+  // 2. Try /tmp path (serverless fallback)
+  try {
+    if (fs.existsSync(TMP_PATH)) {
+      const content = fs.readFileSync(TMP_PATH, "utf-8");
+      memoryCache = JSON.parse(content);
+      return memoryCache!;
+    }
+  } catch {}
+
+  // 3. Fallback to seed
+  const seed = getSeedData();
+  memoryCache = seed;
+  saveLocalFile(seed);
+  return seed;
 }
 
-function saveDatabase(data: DatabaseSchema): void {
+function saveLocalFile(data: DatabaseSchema): void {
+  memoryCache = data;
+
+  // Try writing to data/store.json
   try {
     if (!fs.existsSync(DATA_DIR)) {
       fs.mkdirSync(DATA_DIR, { recursive: true });
     }
     fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error("Error saving database:", err);
+    return;
+  } catch {
+    // If running in read-only environment like Vercel, fallback to /tmp
+    try {
+      fs.writeFileSync(TMP_PATH, JSON.stringify(data, null, 2), "utf-8");
+    } catch {}
   }
 }
 
-export function getIssuer(): IssuerProfile {
-  const db = ensureDataFile();
+async function loadDatabase(): Promise<DatabaseSchema> {
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      const data = await redis.get<DatabaseSchema>(REDIS_KEY);
+      if (data && data.issuer) {
+        memoryCache = data;
+        return data;
+      }
+      // Seed redis on first run
+      const seed = loadLocalFile();
+      await redis.set(REDIS_KEY, seed);
+      memoryCache = seed;
+      return seed;
+    } catch (err) {
+      console.error("Error reading from Redis/KV:", err);
+    }
+  }
+
+  return loadLocalFile();
+}
+
+async function saveDatabase(data: DatabaseSchema): Promise<void> {
+  memoryCache = data;
+  saveLocalFile(data);
+
+  const redis = getRedisClient();
+  if (redis) {
+    try {
+      await redis.set(REDIS_KEY, data);
+    } catch (err) {
+      console.error("Error writing to Redis/KV:", err);
+    }
+  }
+}
+
+export async function getIssuer(): Promise<IssuerProfile> {
+  const db = await loadDatabase();
   return db.issuer;
 }
 
-export function updateIssuer(profile: Partial<IssuerProfile>): IssuerProfile {
-  const db = ensureDataFile();
+export async function updateIssuer(profile: Partial<IssuerProfile>): Promise<IssuerProfile> {
+  const db = await loadDatabase();
   db.issuer = { ...db.issuer, ...profile };
-  saveDatabase(db);
+  await saveDatabase(db);
   return db.issuer;
 }
 
-export function getBadgeClass(id: string): BadgeClassDefinition | null {
-  const db = ensureDataFile();
+export async function getBadgeClass(id: string): Promise<BadgeClassDefinition | null> {
+  const db = await loadDatabase();
   return db.badges[id] || null;
 }
 
-export function getAllBadgeClasses(): BadgeClassDefinition[] {
-  const db = ensureDataFile();
+export async function getAllBadgeClasses(): Promise<BadgeClassDefinition[]> {
+  const db = await loadDatabase();
   return Object.values(db.badges);
 }
 
-export function createBadgeClass(badge: BadgeClassDefinition): BadgeClassDefinition {
-  const db = ensureDataFile();
+export async function createBadgeClass(badge: BadgeClassDefinition): Promise<BadgeClassDefinition> {
+  const db = await loadDatabase();
   db.badges[badge.id] = badge;
-  saveDatabase(db);
+  await saveDatabase(db);
   return badge;
 }
 
-export function getAssertion(id: string): AssertionRecord | null {
-  const db = ensureDataFile();
+export async function getAssertion(id: string): Promise<AssertionRecord | null> {
+  const db = await loadDatabase();
   return db.assertions[id] || null;
 }
 
-export function getAllAssertions(): AssertionRecord[] {
-  const db = ensureDataFile();
+export async function getAllAssertions(): Promise<AssertionRecord[]> {
+  const db = await loadDatabase();
   return Object.values(db.assertions);
 }
 
-export function getAssertionsByEmail(email: string): AssertionRecord[] {
-  const db = ensureDataFile();
+export async function getAssertionsByEmail(email: string): Promise<AssertionRecord[]> {
+  const db = await loadDatabase();
   const lower = email.trim().toLowerCase();
   return Object.values(db.assertions).filter(
     (a) => a.recipient.email?.toLowerCase() === lower
   );
 }
 
-export function createAssertion(assertion: AssertionRecord): AssertionRecord {
-  const db = ensureDataFile();
+export async function createAssertion(assertion: AssertionRecord): Promise<AssertionRecord> {
+  const db = await loadDatabase();
   db.assertions[assertion.id] = assertion;
-  saveDatabase(db);
+  await saveDatabase(db);
   return assertion;
 }

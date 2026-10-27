@@ -8,7 +8,7 @@ export async function GET(
   const { id } = await params;
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
   const baseUrl = formatBaseUrl(host);
-  const assertionJson = buildOpenBadgesAssertion(id, baseUrl);
+  const assertionJson = await buildOpenBadgesAssertion(id, baseUrl);
 
   if (!assertionJson) {
     return NextResponse.json(

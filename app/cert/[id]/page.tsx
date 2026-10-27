@@ -5,20 +5,20 @@ import { getAssertion, getBadgeClass, getIssuer } from "@/lib/db";
 import CertificateViewer from "./CertificateViewer";
 import { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
-
 interface CertPageProps {
   params: Promise<{ id: string }>;
 }
 
 export async function generateMetadata({ params }: CertPageProps): Promise<Metadata> {
   const { id } = await params;
-  const assertion = getAssertion(id);
+  const assertion = await getAssertion(id);
   if (!assertion) {
     return { title: "Certificado no encontrado" };
   }
-  const badge = getBadgeClass(assertion.badgeClassId);
-  const issuer = getIssuer();
+  const [badge, issuer] = await Promise.all([
+    getBadgeClass(assertion.badgeClassId),
+    getIssuer()
+  ]);
   const recipientName = assertion.recipient.name || "Participante";
   const badgeName = badge?.name || "Insignia";
 
@@ -35,18 +35,18 @@ export async function generateMetadata({ params }: CertPageProps): Promise<Metad
 
 export default async function CertPage({ params }: CertPageProps) {
   const { id } = await params;
-  const assertion = getAssertion(id);
+  const assertion = await getAssertion(id);
 
   if (!assertion) {
     notFound();
   }
 
-  const badge = getBadgeClass(assertion.badgeClassId);
+  const badge = await getBadgeClass(assertion.badgeClassId);
   if (!badge) {
     notFound();
   }
 
-  const issuer = getIssuer();
+  const issuer = await getIssuer();
   const headersList = await headers();
   const host = headersList.get("x-forwarded-host") || headersList.get("host") || "localhost:3000";
 

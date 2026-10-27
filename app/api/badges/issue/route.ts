@@ -15,16 +15,20 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get("email");
 
-  const badges = getAllBadgeClasses();
-  let assertions = getAllAssertions();
+  const [badges, allAssertions, issuer] = await Promise.all([
+    getAllBadgeClasses(),
+    getAllAssertions(),
+    getIssuer()
+  ]);
 
+  let assertions = allAssertions;
   if (email) {
     const lower = email.trim().toLowerCase();
     assertions = assertions.filter((a) => a.recipient.email?.toLowerCase() === lower);
   }
 
   return NextResponse.json({
-    issuer: getIssuer(),
+    issuer,
     badges,
     assertions
   });
@@ -61,7 +65,7 @@ export async function POST(request: NextRequest) {
       }
 
       const id = generateAssertionId();
-      const newBadge = createBadgeClass({
+      const newBadge = await createBadgeClass({
         id,
         name,
         description: description || "",
@@ -90,7 +94,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const badge = getBadgeClass(badgeClassId);
+      const badge = await getBadgeClass(badgeClassId);
       if (!badge) {
         return NextResponse.json({ error: "La insignia indicada no existe" }, { status: 404 });
       }
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
       const salt = `salt_${id.slice(0, 8)}`;
       const { identity } = hashRecipientEmail(recipientEmail, salt);
 
-      const assertion = createAssertion({
+      const assertion = await createAssertion({
         id,
         badgeClassId,
         recipient: {
@@ -141,7 +145,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const badge = getBadgeClass(badgeClassId);
+      const badge = await getBadgeClass(badgeClassId);
       if (!badge) {
         return NextResponse.json({ error: "La insignia indicada no existe" }, { status: 404 });
       }
@@ -158,7 +162,7 @@ export async function POST(request: NextRequest) {
         const salt = `salt_${id.slice(0, 8)}`;
         const { identity } = hashRecipientEmail(email, salt);
 
-        const assertion = createAssertion({
+        const assertion = await createAssertion({
           id,
           badgeClassId,
           recipient: {

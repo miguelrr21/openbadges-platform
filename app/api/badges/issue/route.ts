@@ -9,7 +9,7 @@ import {
 } from "@/lib/db";
 import { generateAssertionId, hashRecipientEmail } from "@/lib/crypto";
 import { formatBaseUrl } from "@/lib/urls";
-import { verifyAdminSessionToken, getAdminPassword } from "@/lib/auth";
+import { verifyAdminSessionToken, validateAdminPassword } from "@/lib/auth";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -35,11 +35,10 @@ export async function POST(request: NextRequest) {
   const token = request.cookies.get("admin_session")?.value;
   const authHeader = request.headers.get("authorization");
   const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const adminSecret = getAdminPassword();
 
   const isAuth =
     verifyAdminSessionToken(token) ||
-    (Boolean(adminSecret) && bearerToken === adminSecret);
+    (Boolean(bearerToken) && validateAdminPassword(bearerToken!));
 
   if (!isAuth) {
     return NextResponse.json(

@@ -8,8 +8,8 @@ import {
 
 export { formatBaseUrl };
 
-export function buildOpenBadgesIssuer(baseUrl: string): OpenBadgesIssuer {
-  const issuer = getIssuer();
+export async function buildOpenBadgesIssuer(baseUrl: string): Promise<OpenBadgesIssuer> {
+  const issuer = await getIssuer();
   return {
     "@context": "https://w3id.org/openbadges/v2",
     type: "Issuer",
@@ -22,11 +22,11 @@ export function buildOpenBadgesIssuer(baseUrl: string): OpenBadgesIssuer {
   };
 }
 
-export function buildOpenBadgesBadgeClass(
+export async function buildOpenBadgesBadgeClass(
   badgeId: string,
   baseUrl: string
-): OpenBadgesBadgeClass | null {
-  const badge = getBadgeClass(badgeId);
+): Promise<OpenBadgesBadgeClass | null> {
+  const badge = await getBadgeClass(badgeId);
   if (!badge) return null;
 
   return {
@@ -36,18 +36,18 @@ export function buildOpenBadgesBadgeClass(
     name: badge.name,
     description: badge.description,
     criteria: {
-      narrative: badge.criteriaNarrative || `Certificate awarded for ${badge.name}.`
+      narrative: badge.criteriaNarrative || `Certificado concedido por ${badge.name}.`
     },
     issuer: `${baseUrl}/api/badges/issuer`,
     image: badge.image.startsWith("http") ? badge.image : `${baseUrl}${badge.image}`
   };
 }
 
-export function buildOpenBadgesAssertion(
+export async function buildOpenBadgesAssertion(
   assertionId: string,
   baseUrl: string
-): OpenBadgesAssertion | null {
-  const assertion = getAssertion(assertionId);
+): Promise<OpenBadgesAssertion | null> {
+  const assertion = await getAssertion(assertionId);
   if (!assertion) return null;
 
   return {

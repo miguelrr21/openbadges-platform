@@ -12,46 +12,46 @@ interface DatabaseSchema {
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "store.json");
 
-const DEFAULT_SALT = "gdguam_salt_2026";
+const DEFAULT_SALT = "gdguhu_salt_2026";
 
-function getSeedData(): DatabaseSchema {
-  const hectorIdentity = hashRecipientEmail("hector.tablero@gdguam.es", DEFAULT_SALT);
+export function getSeedData(): DatabaseSchema {
+  const sampleIdentity = hashRecipientEmail("asistente@alu.uhu.es", DEFAULT_SALT);
 
   return {
     issuer: {
       id: "/api/badges/issuer",
-      name: "Google Developer Group on Campus - Universidad Autónoma de Madrid",
-      url: "https://gdguam.es",
-      email: "gdguam@gmail.com",
-      image: "https://gdguam.es/logo/logo.svg",
-      description: "Google Developer Group on Campus - UAM es un grupo universitario sin ánimo de lucro orientado a desarrolladores y estudiantes de tecnología.",
+      name: "Google Developer Group on Campus - Universidad de Huelva",
+      url: "https://gdguhu.es",
+      email: "gdguhu@gmail.com",
+      image: "/logo/logo.svg",
+      description: "GDGoC UHU (Google Developer Group on Campus Universidad de Huelva) es la comunidad tecnológica universitaria de la Universidad de Huelva.",
       signers: [
-        { name: "José Arbeláez Nieto", role: "President" },
-        { name: "Héctor Tablero Díaz", role: "Vicepresident" }
+        { name: "Organización GDGoC UHU", role: "Chapter Lead" },
+        { name: "Coordinación Académica", role: "Faculty Advisor" }
       ]
     },
     badges: {
       "69679d9fa12d24f4a673b54b": {
         id: "69679d9fa12d24f4a673b54b",
-        name: "Hackathon GDG x CEUAM",
-        description: "Demostración de habilidades excepcionales en diseño, desarrollo y resolución de retos tecnológicos durante el Hackathon GDG x CEUAM.",
-        criteriaNarrative: "Certificate awarded to Héctor Tablero Díaz for Hackathon GDG x CEUAM.",
-        image: "https://gdguam.es/logo/logo.svg",
+        name: "Hackathon GDGoC UHU",
+        description: "Reconocimiento a la participación destacada, resolución de problemas y desarrollo de software colaborativo durante el Hackathon anual de GDGoC Universidad de Huelva.",
+        criteriaNarrative: "Certificado concedido por la participación y logros técnicos en el Hackathon GDGoC UHU.",
+        image: "/logo/logo.svg",
         theme: "hackathon",
-        eventDates: "March 21, 2026 - March 22, 2026",
-        tags: ["Hackathon", "Innovation", "GDG", "AI", "Development"],
-        createdAt: "2026-01-14T13:43:59.019Z"
+        eventDates: "21 - 22 de marzo de 2026",
+        tags: ["Hackathon", "GDGoC UHU", "Desarrollo", "Universidad de Huelva"],
+        createdAt: "2026-03-22T18:00:00.000Z"
       },
       "6ae00a61a65e3dd2d40bcb0f": {
         id: "6ae00a61a65e3dd2d40bcb0f",
-        name: "Google Tech Summit & Workshop Series",
-        description: "Participación activa en sesiones técnicas, desarrollo de proyectos colaborativos y aprendizaje de tecnologías punteras.",
-        criteriaNarrative: "Certificate awarded to Héctor Tablero Díaz for participation in Google Tech Summit.",
-        image: "https://gdguam.es/logo/logo.svg",
+        name: "Jornadas de Desarrollo & Cloud GDGoC UHU",
+        description: "Certificado de asistencia a los talleres y conferencias técnicas organizadas por el Google Developer Group on Campus de la Universidad de Huelva.",
+        criteriaNarrative: "Certificado de asistencia y aprovechamiento de las jornadas técnicas de GDGoC UHU.",
+        image: "/logo/logo.svg",
         theme: "gdg",
-        eventDates: "October 27, 2026",
-        tags: ["Workshop", "Tech Talk", "Google Cloud", "Community"],
-        createdAt: "2026-10-27T02:20:17.104Z"
+        eventDates: "27 de octubre de 2026",
+        tags: ["Workshop", "Cloud", "GDGoC UHU"],
+        createdAt: "2026-10-27T10:00:00.000Z"
       }
     },
     assertions: {
@@ -61,19 +61,19 @@ function getSeedData(): DatabaseSchema {
         recipient: {
           type: "email",
           hashed: true,
-          identity: "sha256$e3ffc92ddd62238494d803627f032fc7fe0676c02891a497d90b5ed845d1557c",
+          identity: sampleIdentity.identity,
           salt: DEFAULT_SALT,
-          name: "Héctor Tablero Díaz",
-          email: "hector.tablero@gdguam.es"
+          name: "Alejandro Rodríguez",
+          email: "asistente@alu.uhu.es"
         },
-        issuedOn: "2026-01-14T13:43:59.019Z",
+        issuedOn: "2026-03-22T18:00:00.000Z",
         metadata: {
-          rank: "Gold Medal",
-          group: "Test Group",
-          role: "Participant & Winner",
+          rank: "Primer Puesto",
+          group: "Equipo UHU Tech",
+          role: "Participante Ganador",
           signers: [
-            { name: "José Arbeláez Nieto", role: "President" },
-            { name: "Héctor Tablero Díaz", role: "Vicepresident" }
+            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
+            { name: "Coordinación UHU", role: "Tutor Académico" }
           ]
         }
       },
@@ -83,17 +83,17 @@ function getSeedData(): DatabaseSchema {
         recipient: {
           type: "email",
           hashed: true,
-          identity: "sha256$e3ffc92ddd62238494d803627f032fc7fe0676c02891a497d90b5ed845d1557c",
+          identity: sampleIdentity.identity,
           salt: DEFAULT_SALT,
-          name: "Héctor Tablero Díaz",
-          email: "hector.tablero@gdguam.es"
+          name: "Alejandro Rodríguez",
+          email: "asistente@alu.uhu.es"
         },
-        issuedOn: "2026-10-27T02:20:17.104Z",
+        issuedOn: "2026-10-27T10:00:00.000Z",
         metadata: {
-          role: "Attendee",
+          role: "Asistente",
           signers: [
-            { name: "José Arbeláez Nieto", role: "President" },
-            { name: "Héctor Tablero Díaz", role: "Vicepresident" }
+            { name: "Equipo Directivo", role: "Lead GDGoC UHU" },
+            { name: "Coordinación UHU", role: "Tutor Académico" }
           ]
         }
       }

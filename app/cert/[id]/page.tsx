@@ -5,6 +5,9 @@ import { getAssertion, getBadgeClass, getIssuer } from "@/lib/db";
 import CertificateViewer from "./CertificateViewer";
 import { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 interface CertPageProps {
   params: Promise<{ id: string }>;
 }
